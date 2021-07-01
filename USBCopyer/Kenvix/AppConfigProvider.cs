@@ -13,14 +13,15 @@ namespace Kenvix
         const string SettingsRootNode = "Settings"; // XML Root Node
         const bool SkipRoamingCheck = true; //if true, all settings will be forcely marked as Roaming 
 
+
+
         /// <summary>
         /// Used to determine where to store the settings
         /// </summary>
         /// <returns></returns>
         public virtual string GetAppSettingsPath()
-        {
-            return USBCopyer.Host.confdir; //Use application path
-        }
+            => USBCopyer.Host.confdir; //Use application path
+
 
         /// <summary>
         /// Used to determine the filename to store the settings

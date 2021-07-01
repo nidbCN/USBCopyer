@@ -48,7 +48,7 @@ namespace USBCopyer
 
         private void logButton_Click(object sender, EventArgs e)
         {
-            host.openLogFile();
+            host.OpenLogFile();
         }
 
         private void dirDialogButton_Click(object sender, EventArgs e)
@@ -61,12 +61,12 @@ namespace USBCopyer
 
         private void fileButton_Click(object sender, EventArgs e)
         {
-            host.openFile();
+            host.OpenFile();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            host.openBlog();
+            host.OpenBlog();
         }
 
         private void saveButton_Click(object sender, EventArgs e)
