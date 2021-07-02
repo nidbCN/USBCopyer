@@ -681,9 +681,9 @@ namespace USBCopyer
 
         private void SettingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Thread th = new Thread(() =>
+            var th = new Thread(() =>
             {
-                Setting dia = new()
+                var dia = new Setting()
                 {
                     host = this
                 };
@@ -719,8 +719,11 @@ namespace USBCopyer
         /// 所有没有子“文件系统”的都将被删除
         /// </summary>
         /// <param name="storagepath"></param>
-        public void KillEmptyDirectory(String startLocation)
+        public void KillEmptyDirectory(string startLocation)
         {
+            if (startLocation is null)
+                
+
             foreach (var directory in Directory.GetDirectories(startLocation))
             {
                 KillEmptyDirectory(directory);
@@ -740,7 +743,7 @@ namespace USBCopyer
             }
             catch (Exception ex)
             {
-                Error("打开失败：" + ex.Message);
+                Error($"打开失败：{ex.Message}");
             }
         }
 
@@ -749,7 +752,7 @@ namespace USBCopyer
             OpenBlog();
         }
 
-        private void nameMenuItem_Click(object sender, EventArgs e)
+        private void NameMenuItem_Click(object sender, EventArgs e)
         {
             openPage();
         }

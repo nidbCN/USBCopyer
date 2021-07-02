@@ -94,7 +94,7 @@ namespace USBCopyer
             this.nameMenuItem.Name = "nameMenuItem";
             this.nameMenuItem.Size = new System.Drawing.Size(252, 26);
             this.nameMenuItem.Text = "USBCopyer";
-            this.nameMenuItem.Click += new System.EventHandler(this.nameMenuItem_Click);
+            this.nameMenuItem.Click += new System.EventHandler(this.NameMenuItem_Click);
             // 
             // BlogMenuItem
             // 

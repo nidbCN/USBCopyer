@@ -1,51 +1,28 @@
 ﻿using System;
+using System.IO;
+using System.Xml;
 using System.Collections;
 using System.Configuration;
 using System.Collections.Specialized;
-using System.Xml;
 using System.Windows.Forms;
-using System.IO;
 
 namespace Kenvix
 {
     public class AppConfigProvider : SettingsProvider
     {
-        const string SettingsRootNode = "Settings"; // XML Root Node
-        const bool SkipRoamingCheck = true; //if true, all settings will be forcely marked as Roaming 
+        const string SettingsRootNode = "Settings";     // XML Root Node
+        const bool SkipRoamingCheck = true;             //if true, all settings will be forcely marked as Roaming 
 
+        public string AppSettingsPath => USBCopyer.Host.confdir; //Use application path
 
-
-        /// <summary>
-        /// Used to determine where to store the settings
-        /// </summary>
-        /// <returns></returns>
-        public virtual string GetAppSettingsPath()
-            => USBCopyer.Host.confdir; //Use application path
-
-
-        /// <summary>
-        /// Used to determine the filename to store the settings
-        /// </summary>s
-        /// <returns></returns>
-        public virtual string GetAppSettingsFilename()
-        {
-            return "Config.xml";
-        }
+        public string AppSettingsFilename => "Config.xml";
 
 
         public override void Initialize(string name, NameValueCollection col)
-        {
-            base.Initialize(ApplicationName, col);
-        }
+            => base.Initialize(ApplicationName, col);
 
-        public override string ApplicationName
-        {
-            get
-            {
-                return Application.ProductName;
-            }
-            set { }
-        }
+        public override string ApplicationName => Application.ProductName;
+
 
         /// <summary>
         /// Iterate through the settings to be stored
@@ -55,10 +32,14 @@ namespace Kenvix
         /// <param name="propvals"></param>
         public override void SetPropertyValues(SettingsContext context, SettingsPropertyValueCollection propvals)
         {
-            foreach (SettingsPropertyValue propval in propvals)
+            foreach (var propvalObj in propvals)
+            {
+                SettingsPropertyValue propval = propvalObj as SettingsPropertyValue;
                 SetValue(propval);
+            }
 
-            SettingsXML.Save(Path.Combine(GetAppSettingsPath(), GetAppSettingsFilename()));
+
+            SettingsXML.Save(Path.Combine(AppSettingsPath, AppSettingsFilename));
         }
 
         public override SettingsPropertyValueCollection GetPropertyValues(SettingsContext context, SettingsPropertyCollection props)
@@ -91,7 +72,7 @@ namespace Kenvix
 
                     try
                     {
-                        m_SettingsXML.Load(Path.Combine(GetAppSettingsPath(), GetAppSettingsFilename()));
+                        m_SettingsXML.Load(Path.Combine(AppSettingsPath, AppSettingsFilename));
                     }
                     catch (Exception)
                     {
@@ -112,21 +93,21 @@ namespace Kenvix
 
         private string GetValue(SettingsProperty setting)
         {
-            string ret = "";
+            string ret;
 
             try
             {
                 if (IsRoaming(setting))
-                    ret = SettingsXML.SelectSingleNode(SettingsRootNode + "/" + setting.Name).InnerText;
+                    ret = SettingsXML.SelectSingleNode($"{SettingsRootNode}/{setting.Name}")?.InnerText ?? string.Empty;
                 else
-                    ret = SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName + "/" + setting.Name).InnerText;
+                    ret = SettingsXML.SelectSingleNode($"{SettingsRootNode}/{Environment.MachineName}/{setting.Name}")?.InnerText ?? string.Empty;
             }
             catch (Exception)
             {
                 if (setting.DefaultValue != null)
                     ret = setting.DefaultValue.ToString();
                 else
-                    ret = "";
+                    ret = string.Empty;
             }
 
             return ret;
