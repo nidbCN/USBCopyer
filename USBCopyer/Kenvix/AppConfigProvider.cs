@@ -17,11 +17,13 @@ namespace Kenvix
 
         public string AppSettingsFilename => "Config.xml";
 
+        private XmlDocument _settingsXML;
 
-        public override void Initialize(string name, NameValueCollection col)
+        public override void Initialize(string _, NameValueCollection col)
             => base.Initialize(ApplicationName, col);
 
-        public override string ApplicationName => Application.ProductName;
+        private string _applicationName = Application.ProductName;
+        public override string ApplicationName { get => _applicationName; set => _applicationName = value; }
 
 
         /// <summary>
@@ -38,27 +40,29 @@ namespace Kenvix
                 SetValue(propval);
             }
 
-
             SettingsXML.Save(Path.Combine(AppSettingsPath, AppSettingsFilename));
         }
 
         public override SettingsPropertyValueCollection GetPropertyValues(SettingsContext context, SettingsPropertyCollection props)
         {
             // Create new collection of values
-            SettingsPropertyValueCollection values = new SettingsPropertyValueCollection();
+            var values = new SettingsPropertyValueCollection();
 
             // Iterate through the settings to be retrieved
-            foreach (SettingsProperty setting in props)
+            foreach (var settingObj in props)
             {
-                SettingsPropertyValue value = new SettingsPropertyValue(setting);
-                value.IsDirty = false;
-                value.SerializedValue = GetValue(setting);
+                var setting = settingObj as SettingsProperty;
+                var value = new SettingsPropertyValue(setting)
+                {
+                    IsDirty = false,
+                    SerializedValue = GetValue(setting)
+                };
                 values.Add(value);
             }
             return values;
         }
 
-        private XmlDocument m_SettingsXML = null;
+
 
         private XmlDocument SettingsXML
         {
@@ -66,30 +70,31 @@ namespace Kenvix
             {
                 // If we dont hold an xml document, try opening one.  
                 // If it doesnt exist then create a new one ready.
-                if (m_SettingsXML == null)
+                if (_settingsXML is null)
                 {
-                    m_SettingsXML = new XmlDocument();
+                    _settingsXML = new XmlDocument();
 
                     try
                     {
-                        m_SettingsXML.Load(Path.Combine(AppSettingsPath, AppSettingsFilename));
+                        _settingsXML.Load(Path.Combine(AppSettingsPath, AppSettingsFilename));
                     }
                     catch (Exception)
                     {
                         // Create new document
-                        XmlDeclaration dec = m_SettingsXML.CreateXmlDeclaration("1.0", "utf-8", string.Empty);
-                        m_SettingsXML.AppendChild(dec);
+                        var dec = _settingsXML.CreateXmlDeclaration("1.0", "utf-8", string.Empty);
+                        var nodeRoot = _settingsXML.CreateNode(XmlNodeType.Element, SettingsRootNode, string.Empty);
 
-                        XmlNode nodeRoot;
+                        _settingsXML.AppendChild(dec);
+                        _settingsXML.AppendChild(nodeRoot);
 
-                        nodeRoot = m_SettingsXML.CreateNode(XmlNodeType.Element, SettingsRootNode, "");
-                        m_SettingsXML.AppendChild(nodeRoot);
                     }
                 }
 
-                return m_SettingsXML;
+                return _settingsXML;
             }
         }
+
+
 
         private string GetValue(SettingsProperty setting)
         {
@@ -115,8 +120,8 @@ namespace Kenvix
 
         private void SetValue(SettingsPropertyValue propVal)
         {
-            XmlElement MachineNode;
-            XmlElement SettingNode;
+            XmlElement machineNode;
+            XmlElement settingNode;
 
             // Determine if the setting is roaming.
             // If roaming then the value is stored as an element under the root
@@ -124,24 +129,24 @@ namespace Kenvix
             try
             {
                 if (IsRoaming(propVal.Property))
-                    SettingNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + propVal.Name);
+                    settingNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + propVal.Name);
                 else
-                    SettingNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName + "/" + propVal.Name);
+                    settingNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName + "/" + propVal.Name);
             }
             catch (Exception)
             {
-                SettingNode = null;
+                settingNode = null;
             }
 
             // Check to see if the node exists, if so then set its new value
-            if (SettingNode != null)
-                SettingNode.InnerText = propVal.SerializedValue.ToString();
+            if (settingNode != null)
+                settingNode.InnerText = propVal.SerializedValue.ToString();
             else if (IsRoaming(propVal.Property))
             {
                 // Store the value as an element of the Settings Root Node
-                SettingNode = SettingsXML.CreateElement(propVal.Name);
-                SettingNode.InnerText = propVal.SerializedValue.ToString();
-                SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(SettingNode);
+                settingNode = SettingsXML.CreateElement(propVal.Name);
+                settingNode.InnerText = propVal.SerializedValue.ToString();
+                SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(settingNode);
             }
             else
             {
@@ -149,23 +154,23 @@ namespace Kenvix
                 // creating a new machine name node if one doesnt exist.
                 try
                 {
-                    MachineNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName);
+                    machineNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName);
                 }
                 catch (Exception)
                 {
-                    MachineNode = SettingsXML.CreateElement(Environment.MachineName);
-                    SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(MachineNode);
+                    machineNode = SettingsXML.CreateElement(Environment.MachineName);
+                    SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(machineNode);
                 }
 
-                if (MachineNode == null)
+                if (machineNode == null)
                 {
-                    MachineNode = SettingsXML.CreateElement(Environment.MachineName);
-                    SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(MachineNode);
+                    machineNode = SettingsXML.CreateElement(Environment.MachineName);
+                    SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(machineNode);
                 }
 
-                SettingNode = SettingsXML.CreateElement(propVal.Name);
-                SettingNode.InnerText = propVal.SerializedValue.ToString();
-                MachineNode.AppendChild(SettingNode);
+                settingNode = SettingsXML.CreateElement(propVal.Name);
+                settingNode.InnerText = propVal.SerializedValue.ToString();
+                machineNode.AppendChild(settingNode);
             }
         }
 
