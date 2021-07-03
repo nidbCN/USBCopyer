@@ -80,7 +80,7 @@ namespace USBCopyer
             {
                 white = new string[0];
             }
-            nicon.Visible = Program.showicon;
+            nicon.Visible = Program.showIcon;
             if (!Properties.Settings.Default.multirun)
             {
                 var processcollection = Process.GetProcessesByName(Application.ProductName);
@@ -140,7 +140,7 @@ namespace USBCopyer
             {
                 nicon.ShowBalloonTip(1000, tit, str, msgtype);
             }
-            Program.log(tit + "：" + str);
+            Program.Log(tit + "：" + str);
         }
 
         public void Msg(string str, ToolTipIcon msgtype)
@@ -150,7 +150,7 @@ namespace USBCopyer
 
         public void Error(string msg, string title = "错误")
         {
-            Program.log(title + "：" + msg.Replace("\r\n", " "), 2);
+            Program.Log(title + "：" + msg.Replace("\r\n", " "), 2);
             if (nicon.Visible)
             {
                 MessageBox.Show(msg, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -159,7 +159,7 @@ namespace USBCopyer
 
         public void Success(string msg, string title = "操作完成")
         {
-            Program.log(title + "：" + msg.Replace("\r\n", " "));
+            Program.Log(title + "：" + msg.Replace("\r\n", " "));
             if (nicon.Visible)
             {
                 MessageBox.Show(msg, title, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -220,11 +220,11 @@ namespace USBCopyer
                                                 File.WriteAllText(OutputPath, CallbackCode);
                                                 ExitCode = RunCallback(OutputPath, out string StdOut);
                                                 File.Delete(OutputPath);
-                                                Program.log("DiskDetectedCallback 回调运行完成, 回调退出码: " + ExitCode + " 输出: \r\n" + StdOut);
+                                                Program.Log("DiskDetectedCallback 回调运行完成, 回调退出码: " + ExitCode + " 输出: \r\n" + StdOut);
                                             }
                                             catch (Exception ex)
                                             {
-                                                Program.log("DiskDetectedCallback 回调运行失败\r\n" + ex.ToString(), 1);
+                                                Program.Log("DiskDetectedCallback 回调运行失败\r\n" + ex.ToString(), 1);
                                             }
                                         });
                                         th.Start();
@@ -233,7 +233,7 @@ namespace USBCopyer
                                             th.Join();
                                             if (ExitCode != 0)
                                             {
-                                                Program.log("根据 DiskDetectedCallback 回调退出码: " + ExitCode + " 复制操作取消。", 0);
+                                                Program.Log("根据 DiskDetectedCallback 回调退出码: " + ExitCode + " 复制操作取消。", 0);
                                             }
                                         }
                                     }
@@ -242,25 +242,25 @@ namespace USBCopyer
                                         //Network Drive (4)
                                         if (Properties.Settings.Default.SkipNetworkDisk && (int)diskinfo.Properties["DriveType"].Value == 4)
                                         {
-                                            Program.log("检测到磁盘种类为网络驱动器：" + disk + " 根据设置取消复制！");
+                                            Program.Log("检测到磁盘种类为网络驱动器：" + disk + " 根据设置取消复制！");
                                             return;
                                         }
                                         //Compact Disc (5)
                                         else if (Properties.Settings.Default.SkipDVD && (int)diskinfo.Properties["DriveType"].Value == 5)
                                         {
-                                            Program.log("检测到磁盘种类为光盘驱动器或虚拟光驱：" + disk + " 根据设置取消复制！");
+                                            Program.Log("检测到磁盘种类为光盘驱动器或虚拟光驱：" + disk + " 根据设置取消复制！");
                                             return;
                                         }
                                         //Removable Disk (2)
                                         else if (Properties.Settings.Default.SkipUDisk && (int)diskinfo.Properties["DriveType"].Value == 2)
                                         {
-                                            Program.log("检测到磁盘种类为可移动磁盘：" + disk + " 根据设置取消复制！");
+                                            Program.Log("检测到磁盘种类为可移动磁盘：" + disk + " 根据设置取消复制！");
                                             return;
                                         }
                                         //Local Disk (3)
                                         else if (Properties.Settings.Default.SkipLocalDisk && (int)diskinfo.Properties["DriveType"].Value == 3)
                                         {
-                                            Program.log("检测到磁盘种类为硬盘驱动器：" + disk + " 根据设置取消复制！");
+                                            Program.Log("检测到磁盘种类为硬盘驱动器：" + disk + " 根据设置取消复制！");
                                             return;
                                         }
                                         //Unknown (0)
@@ -268,7 +268,7 @@ namespace USBCopyer
                                         //No Root Directory(1)
                                         else if (Properties.Settings.Default.SkipOtherDisk && ((int)diskinfo.Properties["DriveType"].Value == 6 || (int)diskinfo.Properties["DriveType"].Value == 1 || (int)diskinfo.Properties["DriveType"].Value == 0))
                                         {
-                                            Program.log("检测到磁盘种类为其他驱动器：" + disk + " 根据设置取消复制！");
+                                            Program.Log("检测到磁盘种类为其他驱动器：" + disk + " 根据设置取消复制！");
                                             return;
                                         }
                                     }
@@ -288,7 +288,7 @@ namespace USBCopyer
                                             diskdir = disk.Substring(0, 1) + " - " + diskname;
                                         }
                                         Msg(disk, "存储设备已插入");
-                                        Program.log("获取存储设备序列号失败，文件目录将命名为：" + diskdir);
+                                        Program.Log("获取存储设备序列号失败，文件目录将命名为：" + diskdir);
                                     }
                                     else
                                     {
@@ -303,12 +303,12 @@ namespace USBCopyer
                                         {
                                             if (!string.IsNullOrEmpty(diskser) && blackid.Contains(diskser))
                                             {
-                                                Program.log("黑名单磁盘序列号：" + diskser + " 取消复制！");
+                                                Program.Log("黑名单磁盘序列号：" + diskser + " 取消复制！");
                                                 return;
                                             }
                                             if (!string.IsNullOrEmpty(disk) && blackdisk.Contains(disk.Substring(0, 1)))
                                             {
-                                                Program.log("黑名单分区号：" + disk + " 取消复制！");
+                                                Program.Log("黑名单分区号：" + disk + " 取消复制！");
                                                 return;
                                             }
                                         }
@@ -316,7 +316,7 @@ namespace USBCopyer
                                         {
                                             if ((string.IsNullOrEmpty(diskser) || !blackid.Contains(diskser)) && (string.IsNullOrEmpty(disk) || !blackdisk.Contains(disk.Substring(0, 1))))
                                             {
-                                                Program.log("磁盘序列号：" + diskser + " 及分区号 " + disk + " 均不在白名单，取消复制！");
+                                                Program.Log("磁盘序列号：" + diskser + " 及分区号 " + disk + " 均不在白名单，取消复制！");
                                                 return;
                                             }
                                         }
@@ -324,17 +324,17 @@ namespace USBCopyer
                                         {
                                             if (Properties.Settings.Default.sleep > 0)
                                             {
-                                                Program.log("延迟复制：将在 " + Properties.Settings.Default.sleep + "秒后进行复制");
+                                                Program.Log("延迟复制：将在 " + Properties.Settings.Default.sleep + "秒后进行复制");
                                                 Thread.Sleep(Properties.Settings.Default.sleep * 1000);
                                                 if (!Directory.Exists(disk + "\\"))
                                                 {
                                                     if (string.IsNullOrEmpty(diskser))
                                                     {
-                                                        Program.log("在延迟复制期间获取序列号失败的存储设备已拔出，复制取消：" + diskdir, 1);
+                                                        Program.Log("在延迟复制期间获取序列号失败的存储设备已拔出，复制取消：" + diskdir, 1);
                                                     }
                                                     else
                                                     {
-                                                        Program.log("在延迟复制期间存储设备已拔出，复制取消：" + disk + " - " + diskser, 1);
+                                                        Program.Log("在延迟复制期间存储设备已拔出，复制取消：" + disk + " - " + diskser, 1);
                                                     }
                                                     return;
                                                 }
@@ -342,7 +342,7 @@ namespace USBCopyer
                                             SetIcon(IconStatus.working);
                                             if (Properties.Settings.Default.autorm && Directory.Exists(dir + diskdir))
                                             {
-                                                Program.log("清空输出目录：" + dir + diskdir);
+                                                Program.Log("清空输出目录：" + dir + diskdir);
                                                 Directory.Delete(dir + diskdir, true);
                                             }
                                             if (!File.Exists(dir + "Disks.csv"))
@@ -367,7 +367,7 @@ namespace USBCopyer
                                             }
                                             catch (Exception ex)
                                             {
-                                                Program.log("写入磁盘日志 Disk.csv 失败，文件可能被占用：\r\n" + ex.ToString(), 1);
+                                                Program.Log("写入磁盘日志 Disk.csv 失败，文件可能被占用：\r\n" + ex.ToString(), 1);
                                             }
                                             CopyDirectory(disk + "\\", dir + diskdir);
                                             if (Properties.Settings.Default.SkipEmptyFolder)
@@ -388,11 +388,11 @@ namespace USBCopyer
                                                         File.WriteAllText(OutputPath, CallbackCode);
                                                         int ExitCode = RunCallback(OutputPath, out string StdOut);
                                                         File.Delete(OutputPath);
-                                                        Program.log("AllCompletedCallback 回调运行完成, 回调退出码: " + ExitCode + " 输出: \r\n" + StdOut);
+                                                        Program.Log("AllCompletedCallback 回调运行完成, 回调退出码: " + ExitCode + " 输出: \r\n" + StdOut);
                                                     }
                                                     catch (Exception ex)
                                                     {
-                                                        Program.log("AllCompletedCallback 回调运行失败\r\n" + ex.ToString(), 1);
+                                                        Program.Log("AllCompletedCallback 回调运行失败\r\n" + ex.ToString(), 1);
                                                     }
                                                 });
                                                 th.Start();
@@ -401,11 +401,11 @@ namespace USBCopyer
                                             SetIcon(IconStatus.free);
                                             if (string.IsNullOrEmpty(diskser))
                                             {
-                                                Program.log("设备数据复制完成，但由于获取磁盘序列号失败，文件目录命名为：" + diskdir);
+                                                Program.Log("设备数据复制完成，但由于获取磁盘序列号失败，文件目录命名为：" + diskdir);
                                             }
                                             else
                                             {
-                                                Program.log("设备数据复制完成：" + disk + " - " + diskser);
+                                                Program.Log("设备数据复制完成：" + disk + " - " + diskser);
                                             }
                                             copyThread.Remove(disk);
                                         })
@@ -418,7 +418,7 @@ namespace USBCopyer
                                 catch (Exception ex)
                                 {
                                     SetIcon(IconStatus.free);
-                                    Program.log("获取插入的存储设备信息失败，复制已取消：" + ex.ToString(), 2);
+                                    Program.Log("获取插入的存储设备信息失败，复制已取消：" + ex.ToString(), 2);
                                 }
                             }
                             else  //存储设备拔/弹出
@@ -434,7 +434,7 @@ namespace USBCopyer
                                             copyThread[disk] = null;
                                         }
                                         copyThread.Remove(disk);
-                                        Program.log("用户弹出了存储设备，强制停止复制：" + disk, 1);
+                                        Program.Log("用户弹出了存储设备，强制停止复制：" + disk, 1);
                                     }
                                 }
                                 catch (Exception) { }
@@ -624,15 +624,15 @@ namespace USBCopyer
                         }
                         catch (Exception ex)
                         {
-                            Program.log("创建目录：" + destName + "：失败：" + ex.ToString(), 1);
+                            Program.Log("创建目录：" + destName + "：失败：" + ex.ToString(), 1);
                         }
                     }
                 }
-                Program.log(CopyLog, 0);
+                Program.Log(CopyLog, 0);
             }
             catch (Exception ex)
             {
-                Program.log("复制目录失败，设备可能被强行拔出：" + ex.ToString(), 1);
+                Program.Log("复制目录失败，设备可能被强行拔出：" + ex.ToString(), 1);
             }
         }
 

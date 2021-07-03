@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define SKIP_ROAMING_CHECK  // All settings will be forcely marked as Roaming 
+
+using System;
 using System.IO;
 using System.Xml;
 using System.Collections;
@@ -11,7 +13,6 @@ namespace Kenvix
     public class AppConfigProvider : SettingsProvider
     {
         const string SettingsRootNode = "Settings";     // XML Root Node
-        const bool SkipRoamingCheck = true;             //if true, all settings will be forcely marked as Roaming 
 
         public string AppSettingsPath => USBCopyer.Host.confdir; //Use application path
 
@@ -120,6 +121,8 @@ namespace Kenvix
 
         private void SetValue(SettingsPropertyValue propVal)
         {
+            var isRoaming = IsRoaming(propVal.Property);
+
             XmlElement machineNode;
             XmlElement settingNode;
 
@@ -128,10 +131,10 @@ namespace Kenvix
             // Otherwise it is stored under a machine name node 
             try
             {
-                if (IsRoaming(propVal.Property))
-                    settingNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + propVal.Name);
+                if (isRoaming)
+                    settingNode = (XmlElement)SettingsXML.SelectSingleNode($"{SettingsRootNode}/{propVal.Name}");
                 else
-                    settingNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName + "/" + propVal.Name);
+                    settingNode = (XmlElement)SettingsXML.SelectSingleNode($"{SettingsRootNode}/{Environment.MachineName}/{propVal.Name}");
             }
             catch (Exception)
             {
@@ -140,8 +143,10 @@ namespace Kenvix
 
             // Check to see if the node exists, if so then set its new value
             if (settingNode != null)
+            {
                 settingNode.InnerText = propVal.SerializedValue.ToString();
-            else if (IsRoaming(propVal.Property))
+            }
+            else if (isRoaming)
             {
                 // Store the value as an element of the Settings Root Node
                 settingNode = SettingsXML.CreateElement(propVal.Name);
@@ -152,21 +157,11 @@ namespace Kenvix
             {
                 // Its machine specific, store as an element of the machine name node,
                 // creating a new machine name node if one doesnt exist.
-                try
-                {
-                    machineNode = (XmlElement)SettingsXML.SelectSingleNode(SettingsRootNode + "/" + Environment.MachineName);
-                }
-                catch (Exception)
-                {
-                    machineNode = SettingsXML.CreateElement(Environment.MachineName);
-                    SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(machineNode);
-                }
+                machineNode = SettingsXML.SelectSingleNode($"{SettingsRootNode}/{Environment.MachineName}")
+                    as XmlElement
+                    ?? SettingsXML.CreateElement(Environment.MachineName);
 
-                if (machineNode == null)
-                {
-                    machineNode = SettingsXML.CreateElement(Environment.MachineName);
-                    SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(machineNode);
-                }
+                SettingsXML.SelectSingleNode(SettingsRootNode).AppendChild(machineNode);
 
                 settingNode = SettingsXML.CreateElement(propVal.Name);
                 settingNode.InnerText = propVal.SerializedValue.ToString();
@@ -181,14 +176,17 @@ namespace Kenvix
         /// <returns></returns>
         private bool IsRoaming(SettingsProperty prop)
         {
-            if (SkipRoamingCheck) return true;
+#if SKIP_ROAMING_CHECK
+            return true;
+#else
             foreach (DictionaryEntry d in prop.Attributes)
             {
-                Attribute a = (Attribute)d.Value;
-                if (a is SettingsManageabilityAttribute)
+                if (d.Value is SettingsManageabilityAttribute)
                     return true;
             }
+
             return false;
+#endif
         }
     }
 

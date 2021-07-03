@@ -16,7 +16,7 @@ namespace USBCopyer
             InitializeComponent();
             Icon = Program.ico;
             version.Text += Application.ProductVersion;
-            Text += Program.isAdminPermission() ? " (管理员)" : " (低权限模式)";
+            Text += Program.IsAdminPermission() ? " (管理员)" : " (低权限模式)";
             dir.Text = Properties.Settings.Default.dir;
             conflict.SelectedIndex = Properties.Settings.Default.conflict;
             autorm.Checked = Properties.Settings.Default.autorm;
@@ -183,7 +183,7 @@ namespace USBCopyer
         {
             try
             {
-                if (!Program.checkAdminPermission("/setting")) return;
+                if (!Program.CheckAdminPermission("/setting")) return;
                 Properties.Settings.Default.autorunhide = autorunhide.Checked;
                 Properties.Settings.Default.Save();
                 RegistryKey run = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
